@@ -178,6 +178,24 @@ require('overleaf').setup({
 4. `:w` — triggers compile and opens PDF
 5. `:Overleaf tree` — switch between documents
 
+## Events
+
+After connecting to a project, overleaf.nvim fires a `User` autocommand,
+`OverleafConnected`, with the project in its data:
+
+```lua
+vim.api.nvim_create_autocmd('User', {
+  pattern = 'OverleafConnected',
+  callback = function(ev)
+    -- ev.data.project_id, ev.data.project_name,
+    -- ev.data.url (https://www.overleaf.com/project/<id>)
+  end,
+})
+```
+
+It fires on every successful connection, including switching projects and
+reconnecting.
+
 ## External Tool Integration (Claude Code, etc.)
 
 By default, Overleaf documents exist only as virtual buffers — they have no files on disk. This means external tools like Claude Code cannot read or edit them.

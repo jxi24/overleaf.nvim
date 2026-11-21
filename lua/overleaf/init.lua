@@ -190,6 +190,20 @@ function M._connect_project(cookie, project_id, project_name)
 
     -- Show tree immediately
     vim.schedule(function() require('overleaf.tree').toggle() end)
+
+    -- Let user config react to the project (:h User autocommands).
+    vim.schedule(
+      function()
+        vim.api.nvim_exec_autocmds('User', {
+          pattern = 'OverleafConnected',
+          data = {
+            project_id = project_id,
+            project_name = project_name,
+            url = config.get().base_url .. '/project/' .. project_id,
+          },
+        })
+      end
+    )
   end)
 end
 
