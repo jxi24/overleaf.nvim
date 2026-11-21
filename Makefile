@@ -15,6 +15,7 @@ test-lua: $(PLENARY_DIR)
 test-node:
 	cd tests/node && npm install --silent 2>/dev/null
 	node tests/node/integration.test.js
+	node tests/node/download.test.js
 
 lint:
 	luacheck lua/ tests/ plugin/

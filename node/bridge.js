@@ -12,6 +12,16 @@ console.log = (...args) => console.error('[bridge]', ...args);
 
 const BASE_URL = process.env.OVERLEAF_URL || 'https://www.overleaf.com';
 
+// The session cookie is only ever sent to the Overleaf server itself.
+function isOverleafUrl(url) {
+  return new URL(url).origin === new URL(BASE_URL).origin;
+}
+
+// Downloads are named after project and file names; keep them in outputDir.
+function outputPath(dir, name) {
+  return require('path').join(dir, 'overleaf_' + require('path').basename(String(name)));
+}
+
 let requestId = 0;
 let socketManager = null;
 let pendingRequests = 0;
@@ -132,11 +142,14 @@ const handlers = {
     if (!cookie || !url) {
       throw { code: 'MISSING_PARAM', message: 'cookie and url are required' };
     }
+    if (!isOverleafUrl(url)) {
+      throw { code: 'BAD_URL', message: `Not downloading from outside ${BASE_URL}: ${url}` };
+    }
 
     const dir = outputDir || require('os').tmpdir();
     const fs = require('fs');
     fs.mkdirSync(dir, { recursive: true });
-    const tmpPath = require('path').join(dir, 'overleaf_' + (fileName || 'download'));
+    const tmpPath = outputPath(dir, fileName || 'download');
 
     await new Promise((resolve, reject) => {
       const parsed = new URL(url);
@@ -169,7 +182,7 @@ const handlers = {
     // Download binary file
     const fs = require('fs');
     fs.mkdirSync(dir, { recursive: true });
-    const tmpPath = require('path').join(dir, 'overleaf_' + (fileName || fileId));
+    const tmpPath = outputPath(dir, fileName || fileId);
     await new Promise((resolve, reject) => {
       const parsed = new URL(url);
       const httpModule = parsed.protocol === 'http:' ? require('http') : require('https');
@@ -180,10 +193,13 @@ const handlers = {
         headers: { 'Cookie': cookie },
       }, (res) => {
         if (res.statusCode === 302 && res.headers.location) {
-          // Follow redirect
-          const redirectParsed = new URL(res.headers.location);
-          const redirectModule = redirectParsed.protocol === 'http:' ? require('http') : require('https');
-          redirectModule.get(res.headers.location, { headers: { 'Cookie': cookie } }, (res2) => {
+          // Follow redirect (Location may be relative); the cookie only goes
+          // along if it stays on the Overleaf server.
+          res.resume();
+          const redirectUrl = new URL(res.headers.location, url).href;
+          const redirectModule = redirectUrl.startsWith('http:') ? require('http') : require('https');
+          const headers = isOverleafUrl(redirectUrl) ? { 'Cookie': cookie } : {};
+          redirectModule.get(redirectUrl, { headers }, (res2) => {
             const ws = fs.createWriteStream(tmpPath);
             res2.pipe(ws);
             ws.on('finish', () => { ws.close(); resolve(); });

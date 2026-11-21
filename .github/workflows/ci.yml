@@ -41,6 +41,9 @@ jobs:
       - name: Run integration tests
         run: node tests/node/integration.test.js
 
+      - name: Run download tests
+        run: node tests/node/download.test.js
+
   test-lua:
     runs-on: ubuntu-latest
     strategy:
