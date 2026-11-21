@@ -40,9 +40,9 @@ M._state = {
 function M.setup(opts)
   config.setup(opts)
 
-  -- Default keymaps (prefix: <leader>o for Overleaf)
-  local keys = opts and opts.keys or true
-  if keys then
+  -- Default keymaps (prefix: <leader>o for Overleaf); keys = false skips them.
+  -- Read from the merged config: `opts.keys or true` is true even for false.
+  if config.get().keys then
     local map = vim.keymap.set
     map('n', '<leader>oc', function() M.connect() end, { desc = 'Overleaf: Connect' })
     map('n', '<leader>od', function() M.disconnect() end, { desc = 'Overleaf: Disconnect' })

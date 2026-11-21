@@ -19,6 +19,8 @@ describe('config', function()
     it('has node_path defaulting to node', function() assert.are.equal('node', config.get().node_path) end)
 
     it('has log_level defaulting to info', function() assert.are.equal('info', config.get().log_level) end)
+
+    it('has keys defaulting to true', function() assert.is_true(config.get().keys) end)
   end)
 
   describe('setup', function()
